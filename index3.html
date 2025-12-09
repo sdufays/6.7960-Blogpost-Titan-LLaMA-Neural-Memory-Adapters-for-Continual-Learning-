@@ -235,32 +235,34 @@
 	    </div>
 	</div>
 
-	<!-- MOTIVATION -->
-  <div class="content-margin-container" id="motivation">
-      <div class="margin-left-block">
-      </div>
-      <div class="main-content-block">
-          <h1>Motivation</h1>
-          Large language models are trained once on a static snapshot of the internet, but are deployed in a rapidly changing world. At inference time, they run as stateless functions of the current prompt: they don’t continuously update their internal knowledge from what they saw yesterday.<br><br>
+    <!-- MOTIVATION -->
+    <div class="content-margin-container" id="motivation">
+    <div class="margin-left-block">
+    </div>
+    <div class="main-content-block">
+        <h1>Motivation</h1>
 
-          In practice, most real systems try to bolt “memory” on from the outside:
-            <ul>
-            <li><b>RAG</b> (Retrieval-Augmented Generation) – a workaround that’s basically fancy search</li>
-            <li><b>Vector databases</b> – glorified lookup tables with better marketing</li>
-            <li><b>Extended context windows</b> – expensive band-aids paid for in GPU hours</li>
-            <li><b>Sliding-window attention</b> – cheaper attention that quietly loses most of the context</li>
-            </ul>
+        In NLP, we already have a bunch of very strong, off-the-shelf LLMs, but their
+        "memory" cost grows quadratically with sequence length. Most open-source fixes
+        are linear-time hacks&mdash;sliding windows, RAG, caching tricks&mdash;rather than a
+        true learned state. As we discuss in the background, these approaches keep the
+        model stateless and outsource memory to context or retrieval.<br><br>
 
-          These tricks help, but they don’t give the model a learned, persistent internal state that can accumulate experience over time.<br><br>
+        Titans stood out to us because it does the opposite: the state is a learned
+        architecture, not a transient context vector that disappears when the window
+        moves on. We wanted to extend that idea and build modular Titan adapters that
+        plug into a pre-trained LLaMA where we deliberately cripple long-range
+        attention, so the adapter becomes the only path for cross-segment
+        information.<br><br>
 
-          When adapting LLMs to new domains, we can change the <b>weights</b> (powerful but slow, expensive, and risks catastrophic forgetting) or change the <b>state</b> (cheaper but limited by finite context windows). In practice we need both: a mechanism that lets the model specialize and remember over time without constantly retraining or blowing up context length.<br><br>
-
-          We explore this intersection by treating Titans-style neural memory as a cartridge-like adapter on top of a frozen LLaMA backbone. The backbone handles general language understanding; the neural memory module is the only part that keeps learning, acting as a memory sidecar that stores, updates, and retrieves long-range information over time.
-      </div>
-      <div class="margin-right-block">
-        </div>
-        </div>
-	</div>
+        To our knowledge, no one has done this before: combining Titans-style neural
+        memory with a frozen LLaMA backbone as a drop-in "memory cartridge" that
+        <i>replaces</i> long-range attention rather than just augmenting it. The result is
+        an architecture that (i) generates tokens much faster as generation length
+        grows and (ii) can be fine-tuned by swapping in task-specific memory adapters
+        for downstream domains.
+    </div>
+    </div>
 
     <!-- BACKGROUND: part 0  -->
     <div class="content-margin-container" id="background">
