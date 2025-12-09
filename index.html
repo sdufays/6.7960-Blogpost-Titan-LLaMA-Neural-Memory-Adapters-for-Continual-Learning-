@@ -175,7 +175,7 @@
         </div>
 			</div>
 	    <div class="main-content-block">
-          <img src="./images/titan_architecture.png" width=600px/>
+          <img src="./images/titan_architecture.png" width=800px/>
 					<p class="figure-caption">Figure 0: The Titan-LLaMA architecture combines a frozen LLaMA backbone with trainable neural memory modules.</p>
 	    </div>
 	    <div class="margin-right-block">
@@ -211,9 +211,10 @@
 
 				<b>Parameter-efficient adapters.</b> Full fine-tuning is expensive and risks catastrophic forgetting. LoRA <a href="#ref_1">[1]</a> instead adds trainable low-rank factors to frozen weight matrices, reducing trainable parameters by orders of magnitude while preserving expressivity. Cartridges <a href="#ref_2">[2]</a> go further, treating the KV cache as an adapter: learned virtual KV vectors are prepended to the context so the frozen model behaves as if it had read a particular corpus. Both keep backbone weights untouched.<br><br>
 
-				<b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> improve stability and efficiency with linear dynamics. Transformers store everything explicitly via attention, giving precise access to the past but at quadratic cost. This illustrates a core tradeoff: recurrent models compress but forget; transformers remember but scale poorly.<br><br>
+				<b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a>  revisit this idea by improving stability and efficiency with linear dynamics. Transformers on the other hand store everything explicitly via attention, replying on a KV cache that grows with sequence length: every new token attends over all previous ones, which gives precise access to the past but with quadratic cost in the context length. 
+                This illustrates an important tradeoff in ML: recurrent models compress history into a fixed-size state but struggle with very long contexts, while transformers store everything explicitly but become slow and memory-hungry.
 
-				<b>Titans: deep neural memory as state.</b> Titans <a href="#ref_4">[4]</a>, introduced by Google Research in 2024, combines transformer-level accuracy with RNN-like speeds by maintaining a deep neural memory alongside attention. Titans factor memory into three pieces:
+				<br><br><b>Titans: deep neural memory as state.</b> Titans <a href="#ref_4">[4]</a>, introduced by Google Research in 2024, combines transformer-level accuracy with RNN-like speeds by maintaining a deep neural memory alongside attention. Titans factor memory into three pieces:
 				<ul>
 					<li><b>Short-term memory:</b> sliding-window attention over recent tokens</li>
 					<li><b>Long-term memory:</b> a small MLP that maps keys to values, updated online via a "surprise" loss</li>
@@ -315,8 +316,8 @@
 					</tr>
 					<tr>
 						<td>Full-Attention LLaMA</td>
-						<td>~100%</td>
-						<td>~1.0</td>
+						<td>55.2%</td>
+						<td>7.2639</td>
 					</tr>
 					<tr>
 						<td>Segmented-only (no NMM)</td>
@@ -367,9 +368,9 @@
 					</tr>
 				</table>
 
-				<b>The insight:</b> Next-token prediction is "too easy." The NMM learns to predict tokens but doesn't learn the rich intermediate representations that full attention builds.<br><br>
+				<b>The insight</b> here is that token prediction is too easy. The NMM learns to predict tokens but doesn't learn the rich intermediate representations that full attention builds.<br><br>
 
-				<b>Attention distillation closes the gap.</b> We add a second loss that supervises NMM hidden states against full-attention LLaMA's hidden states:<br><br>
+				<b>However, attention distillation closes the gap.</b> We added a second loss that supervises NMM hidden states against full-attention LLaMA's hidden states:<br><br>
 
 				<ol>
 					<li>Forward pass through Titan-LLaMA → collect "student" hidden states</li>
