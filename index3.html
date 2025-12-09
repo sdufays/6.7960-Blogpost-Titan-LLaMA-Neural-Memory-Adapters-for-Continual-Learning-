@@ -228,7 +228,7 @@
         </div>
 			</div>
 	    <div class="main-content-block">
-          <img src="./images/titan_architecture.png" width=800px/>
+          <img src="" width=800px/>
 	    </div>
 	    <div class="margin-right-block">
 					<b>TL;DR:</b> HAVE TO DO 
@@ -257,10 +257,33 @@
         memory with a frozen backbone as a drop-in "memory cartridge". The result is
         an architecture that (i) generates tokens much faster as generation length
         grows and (ii) can be fine-tuned by swapping in task-specific memory adapters
-        for downstream domains.
-    </div>
-    <div class="margin-right-block">
-    </div>
+        for downstream domains.<br><br>
+        
+        Architecturally, this buys us a different scaling regime.
+        Full-attention LLaMA pays a quadratic price in sequence length, so tokens/sec
+        inevitably drop as generations get longer. Once we segment attention, each
+        token only attends within a fixed-size window, so generation cost is tied to
+        segment size rather than total sequence length. With a well-optimized NMM,
+        a segmented-with-memory model should overtake full attention beyond a few
+        segments because the longer you generate, the larger the relative speedup.<br><br>
+
+        <img src="./images/throughput_vs_generation.png" width="750px"/>
+        <p class="figure-caption">
+          Figure 1: Token throughput vs. generation length. Full-attention LLaMA slows
+          down as sequences grow, while segmented attention keeps throughput roughly
+          flat; our segmented+NMM model should eventually beat full attention once the
+          memory kernels are optimized.
+        </p>
+      </div>
+      <div class="margin-right-block">
+        <span class="figure-caption-right">
+          Note that in our
+        prototype the throughput curve still lags slightly behind full
+        attention because the NMM kernels are under-optimized and add extra
+        intermediate computation, but that is a systems issue, not a limitation of
+        the design.
+        </span>
+      </div>
     </div>
 
     <!-- BACKGROUND: part 0  -->
@@ -272,7 +295,7 @@
         <h1>Background</h1>
 
         Prior work on adapting language models falls into two categories.<br><br>
-        <b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> revisit this idea by improving stability and efficiency with linear dynamics. Transformers on the other hand store everything explicitly via attention, relying on a KV cache that grows with sequence length: every new token attends over all previous ones, which gives precise access to the past but with quadratic cost in the context length.<br><br>
+        <b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> revisit this idea by improving stability and efficiency with linear dynamics. Transformers on the other hand store everything explicitly via attention, relying on a KV cache that grows with sequence length. This means every new token attends over all previous ones, which gives precise access to the past but with quadratic cost in the context length.<br><br>
     </div>
     <div class="margin-right-block">
         <span class="figure-caption-right">
@@ -294,34 +317,46 @@
     </div>
     </div>
 
-        <!-- BACKGROUND: part 2 (Surprise-based memory + Momentum/Forgetting) -->
+    <!-- BACKGROUND: Titans -->
+    <div class="content-margin-container">
+    <div class="margin-left-block">
+    </div>
+
+    <div class="main-content-block">
+        <b>Titans: deep neural memory as state.</b> Titans <a href="#ref_4">[4]</a>, introduced by Google Research in 2024, combines transformer-level accuracy with RNN-like speeds by maintaining a deep neural memory alongside attention. Titans introduces three fundamental innovations:
+				
+		<br><br><b>1. True Test-Time Memory.</b> Instead of just expanding context windows or adding retrieval mechanisms, Titans learns to memorize at test time. The neural long-term memory module learns what to remember while running, gets smarter with every interaction, and maintains context across extended use.<br><br>
+
+    </div>
+
+    <div class="margin-right-block">
+    </div>
+    </div>
+
+    <!-- BACKGROUND: part 2 (Surprise-based memory + Momentum/Forgetting) -->
     <div class="content-margin-container">
       <div class="margin-left-block">
       </div>
 
       <div class="main-content-block">
-        <b>2. Surprise-Based Memory.</b> Instead of trying to remember everything (like RAG) or nothing (like standard Transformers), Titans uses a sophisticated "surprise" metric to determine what's worth remembering. This is similar to how in human psychology, we quickly forget routine events but remember things that break patterns—like unexpected, surprising, or highly emotional events.
+        <b>2. Surprise-Based Memory.</b> Rather than treating every token in the context as equally important, Titans uses a learned "surprise" score to decide what is worth remembering and therefore what actually gets written into its neural memory.
+        We can compare this to how in human psychology, we quickly forget routine events but remember unexpected, surprising, or highly emotional events.
 
         <div class="insight-box">
-          <b>Low surprise:</b> If the model is reading the 6.7960 course page and its memory already expects yet another “PSET 5 released” announcement, the gradient (surprise) is low so it can safely skip memorizing this in permanent storage.<br><br>
-          <b>High surprise:</b> If the same course page suddenly says “All remaining PSETs are cancelled; everyone gets an A!!!” the gradient will be very high, signaling that this is important and should be prioritized for permanent storage.
+          <b>Low surprise:</b> If the model is reading the 6.7960 course page and its memory is expecting yet another “PSET released” announcement, the gradient (surprise) is low so it can safely skip memorizing this in permanent storage.<br><br>
+          <b>High surprise:</b> If the same course page suddenly says “All remaining PSETs are cancelled; everyone gets an A! =)" the gradient will be very high, indicating that this is important and should be prioritized for permanent storage.
         </div>
 
-        The model uses this internal error signal (the gradient) as a mathematical equivalent of saying "hey, this is important!" This allows selective memory updates with only the most novel and context-breaking information.<br><br>
+        The model uses this internal error signal (the gradient) as a mathematical equivalent of saying "Pay attention to this!" This allows selective memory updates with only the most important information.<br><br>
 
-        Titans refines this with two critical elements:
-        <ul>
-          <li><b>Momentum:</b> The model considers both "momentary surprise" (current input) and "past surprise" (recent context flow), ensuring relevant subsequent information is captured even if individual tokens aren't surprising.</li>
-          <li><b>Forgetting (weight decay):</b> An adaptive weight decay mechanism acts as a forgetting gate, allowing the model to discard information no longer needed when dealing with extremely long sequences.</li>
-        </ul>
-      </div>
+        Titans considers both "momentary surprise" (current input) and "past surprise" (recent context flow) to make sure that relevant subsequent information is captured even if individual tokens aren't surprising.</li>
+    </div>
 
       <div class="margin-right-block">
-        <!-- empty on purpose for this row -->
       </div>
     </div>
 
-    <!-- SURPRISE SHOULD GO HERE: Figure 5 + side note -->
+    <!-- SURPRISE-->
     <div class="content-margin-container">
       <div class="margin-left-block">
       </div>
@@ -334,9 +369,6 @@
       </div>
 
       <div class="margin-right-block">
-        <span class="figure-caption-right">
-          Surprise acts like an automatic “write-head” for memory—only tokens that break the model’s expectations get written into long-term state.
-        </span>
       </div>
     </div>
 
@@ -346,8 +378,10 @@
       </div>
 
       <div class="main-content-block">
-        <br><b>3. Adaptive Forgetting.</b> The breakthrough isn't just in remembering—it's in forgetting intelligently. The system automatically identifies outdated information, preserves critical insights while pruning routine data, and maintains memory efficiency at scale.<br><br>
+        <br><b>3. Adaptive Forgetting.</b> To better manage the memory's limited capacity, Titans adds an adaptive forgetting gate (similar to the gating mechanism in modern RNNs) that scales the previous memory before adding the new surprise update, so the model can softly decay stale information or, in the extreme, wipe the memory entirely.<br><br><br><br>
 
+
+        
         Titans factor memory into three pieces:
         <ul>
           <li><b>Short-term memory:</b> sliding-window attention over recent tokens</li>
