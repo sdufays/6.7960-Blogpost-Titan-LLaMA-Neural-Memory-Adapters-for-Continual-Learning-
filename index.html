@@ -1,0 +1,447 @@
+<html>
+<head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<link rel="shortcut icon" href="images/icon.ico">
+<style type="text/css">
+	body {
+		background-color: #f5f9ff;
+	}
+
+	.content-margin-container {
+		display: flex;
+		width: 100%;
+		justify-content: left;
+		align-items: center;
+	}
+	.main-content-block {
+		width: 70%;
+    max-width: 1100px;
+		background-color: #fff;
+		border-left: 1px solid #DDD;
+		border-right: 1px solid #DDD;
+		padding: 8px 8px 8px 8px;
+		font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	}
+	.margin-left-block {
+			font-size: 14px;
+			width: 15%;
+			max-width: 130px;
+			position: relative;
+			margin-left: 10px;
+			text-align: left;
+			font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+			padding: 5px;
+	}
+	.margin-right-block {
+			font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+			font-size: 14px;
+			width: 25%;
+			max-width: 256px;
+			position: relative;
+			text-align: left;
+			padding: 10px;
+	}
+
+	img {
+			max-width: 100%;
+			height: auto;
+			display: block;
+			margin: auto;
+	}
+
+	a:link,a:visited {
+		color: #0e7862;
+		text-decoration: none;
+	}
+	a:hover {
+		color: #24b597;
+	}
+
+	h1 {
+		font-size: 18px;
+		margin-top: 4px;
+		margin-bottom: 10px;
+	}
+
+	table.header {
+    font-weight: 300;
+    font-size: 17px;
+    flex-grow: 1;
+		width: 70%;
+    max-width: calc(100% - 290px);
+	}
+	table td, table td * {
+	    vertical-align: middle;
+	    position: relative;
+	}
+
+	hr {
+    height: 1px;
+    border: none;
+    background-color: #DDD;
+  }
+
+	div.hypothesis {
+		width: 90%;
+		background-color: #f0f7f5;
+		border: 1px solid #0e7862;
+		border-radius: 10px;
+		font-size: 16px;
+		text-align: left;
+		margin: auto;
+		padding: 16px;
+	}
+
+	div.citation {
+    font-size: 0.8em;
+    background-color:#fff;
+    padding: 10px;
+		height: auto;
+  }
+
+	table.results {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 15px 0;
+		font-size: 14px;
+	}
+	table.results th, table.results td {
+		border: 1px solid #DDD;
+		padding: 8px;
+		text-align: center;
+	}
+	table.results th {
+		background-color: #f0f7f5;
+	}
+
+	.figure-caption {
+		font-size: 14px;
+		color: #555;
+		text-align: center;
+		margin-top: 8px;
+		font-style: italic;
+	}
+
+</style>
+
+	<title>Titan-LLaMA: Neural Memory Adapters for Continual Learning</title>
+	<meta property="og:title" content="Titan-LLaMA: Neural Memory Adapters for Continual Learning" />
+	<meta charset="UTF-8">
+</head>
+
+<body>
+
+	<!-- HEADER -->
+	<div class="content-margin-container">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+					<table class="header" align=left>
+							<tr>
+								<td colspan=4>
+									<span style="font-size: 28px; font-family: 'Courier New', Courier, monospace;">Titan-LLaMA: Neural Memory Adapters for Continual Learning</span>
+								</td>
+							</tr>
+							<tr>
+									<td align=left>
+											<span style="font-size:17px"><a href="#">Sarah Dufays</a></span>
+									</td>
+									<td align=left>
+											<span style="font-size:17px"><a href="#">Sarah Pan</a></span>
+									</td>
+							<tr>
+								<td colspan=4 align=left><span style="font-size:18px">Final project for 6.7960, MIT</span></td>
+							</tr>
+					</table>
+				</div>
+				<div class="margin-right-block">
+				</div>
+	</div>
+
+	<!-- TABLE OF CONTENTS + HERO IMAGE -->
+	<div class="content-margin-container" id="intro">
+			<div class="margin-left-block">
+        <div style="position:fixed; max-width:inherit; top:max(20%,120px)">
+            <b style="font-size:16px">Outline</b><br><br>
+            <a href="#motivation">Motivation</a><br><br>
+            <a href="#background">Background</a><br><br>
+            <a href="#methods">Methods</a><br><br>
+            <a href="#experiments">Experiments</a><br><br>
+            <a href="#results">Results</a><br><br>
+            <a href="#limitations">Limitations</a><br><br>
+            <a href="#references">References</a><br><br>
+        </div>
+			</div>
+	    <div class="main-content-block">
+          <img src="./images/titan_architecture.png" width=600px/>
+					<p class="figure-caption">Figure 0: The Titan-LLaMA architecture combines a frozen LLaMA backbone with trainable neural memory modules.</p>
+	    </div>
+	    <div class="margin-right-block">
+					<b>TL;DR:</b> We attach Titans-style neural memory to a frozen LLaMA backbone. The NMM recovers language modeling but not benchmark performance—until we add attention distillation.
+	    </div>
+	</div>
+
+	<!-- MOTIVATION -->
+  <div class="content-margin-container" id="motivation">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+					<h1>Motivation</h1>
+          Large language models are trained once on a static snapshot of the internet, but are deployed in a rapidly changing world. We need ways to update what they know without starting training from scratch.<br><br>
+
+					When adapting LLMs to new domains, we can change the weights (powerful but slow, expensive, and risks catastrophic forgetting) or change the state (cheaper but limited by finite context windows). In practice we need both: a mechanism that lets the model specialize and remember over time without constantly retraining or blowing up context length.<br><br>
+
+					We explore this intersection by treating Titans-style neural memory as a cartridge-like adapter on top of a frozen LLaMA backbone. The backbone handles general language understanding; the neural memory module is the only part that keeps learning, acting as a memory sidecar that stores, updates, and retrieves long-range information over time.
+	    </div>
+	    <div class="margin-right-block">
+					The key insight: adapt via <i>state</i> (memory) rather than <i>weights</i> (fine-tuning).
+	    </div>
+	</div>
+
+	<!-- BACKGROUND -->
+	<div class="content-margin-container" id="background">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+				<h1>Background</h1>
+
+				Prior work on adapting language models falls into two categories.<br><br>
+
+				<b>Parameter-efficient adapters.</b> Full fine-tuning is expensive and risks catastrophic forgetting. LoRA <a href="#ref_1">[1]</a> instead adds trainable low-rank factors to frozen weight matrices, reducing trainable parameters by orders of magnitude while preserving expressivity. Cartridges <a href="#ref_2">[2]</a> go further, treating the KV cache as an adapter: learned virtual KV vectors are prepended to the context so the frozen model behaves as if it had read a particular corpus. Both keep backbone weights untouched.<br><br>
+
+				<b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> improve stability and efficiency with linear dynamics. Transformers store everything explicitly via attention, giving precise access to the past but at quadratic cost. This illustrates a core tradeoff: recurrent models compress but forget; transformers remember but scale poorly.<br><br>
+
+				<b>Titans: deep neural memory as state.</b> Titans <a href="#ref_4">[4]</a>, introduced by Google Research in 2024, combines transformer-level accuracy with RNN-like speeds by maintaining a deep neural memory alongside attention. Titans factor memory into three pieces:
+				<ul>
+					<li><b>Short-term memory:</b> sliding-window attention over recent tokens</li>
+					<li><b>Long-term memory:</b> a small MLP that maps keys to values, updated online via a "surprise" loss</li>
+					<li><b>Persistent memory:</b> task-level parameters independent of the input sequence</li>
+				</ul>
+
+				In this view, memory is not a vector or cache but a trainable module whose weights <i>are</i> the state—the model learns and adapts dynamically as new data arrives.<br><br>
+
+				<b>Our perspective:</b> We combine these views by attaching Titan-style memory to a frozen LLaMA backbone and treating it as a cartridge-style adapter. The backbone stays fixed; only the Titan memory continues learning.
+	    </div>
+	    <div class="margin-right-block" style="transform: translate(0%, 0%);">
+				Titans' key innovation: memory as a <i>trainable module</i> rather than a fixed cache.
+	    </div>
+	</div>
+
+	<!-- METHODS -->
+	<div class="content-margin-container" id="methods">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+				<h1>Methods</h1>
+
+				We start from Meta-Llama-3.1-8B and wrap it in Titans without ever updating the original weights. The backbone is frozen end-to-end; only two Titan components are trainable: <b>SegmentedAttention</b> (efficient short-term memory via local attention over fixed-length segments) and <b>NeuralMemory</b> (a small MLP that serves as deep long-term memory).<br><br>
+
+				Each decoder layer replaces vanilla self-attention with SegmentedAttention. The sequence is chunked into windows of length S, creating a block-diagonal attention pattern where tokens can only attend within their own segment.<br><br>
+
+				<img src="./images/segmented_attention.png" width=500px/>
+				<p class="figure-caption">Figure 1: Segmented attention isolates tokens into local windows. The block-diagonal pattern shows that later tokens cannot access information from earlier segments.</p><br>
+
+				To bridge this gap, we prepend learned persistent tokens and interleave long-term memory tokens for each window. The Neural Memory Module processes past context and injects memory-derived entries into the attention mask.<br><br>
+
+				<img src="./images/nmm_bridge.png" width=500px/>
+				<p class="figure-caption">Figure 2: The NMM (green) injects cross-segment attention entries, allowing information retrieval across segment boundaries without full-sequence attention.</p><br>
+
+				We attach NeuralMemory to a subset of layers. Hidden states are fed into a MemoryMLP in Q/K/V format, producing a retrieved memory tensor that either adds directly to the residual stream (simple variant) or gates the attention output (gated variant). The NMM maintains state via fast update gradients—the surprise-based write rule—creating a recurrent information pathway.<br><br>
+
+				<img src="./images/temporal_loop.png" width=500px/>
+				<p class="figure-caption">Figure 3: As chunks c1–c5 progress, the NMM is queried then updated based on prediction error, persisting information across the full sequence.</p><br>
+
+				The complete architecture keeps the LLaMA backbone frozen while gradients flow only through the Titan modules.<br><br>
+
+				<img src="./images/full_architecture.png" width=550px/>
+				<p class="figure-caption">Figure 4: Purple: frozen LLaMA. Green: trainable NMM + fast gradients. Only the memory "cartridge" adapts.</p><br>
+
+				Training uses standard next-token prediction on SlimPajama <a href="#ref_5">[5]</a>. We use a higher learning rate for NeuralMemory to keep it more plastic. All experiments run on MIT ORCD H200 nodes.
+	    </div>
+	    <div class="margin-right-block">
+				The backbone is <b>completely frozen</b>—only ~2% of parameters are trainable.
+	    </div>
+	</div>
+
+	<!-- EXPERIMENTS -->
+	<div class="content-margin-container" id="experiments">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+				<h1>Experiments</h1>
+
+				<div class="hypothesis">
+					<b>Hypothesis:</b> A Titans-style neural memory, used as a cartridge-like adapter on top of a frozen LLaMA backbone, can (1) preserve general LM quality, (2) trade long-range attention FLOPs for cheaper learned memory retrieval, and (3) specialize to new domains without catastrophic forgetting.
+				</div><br>
+
+				<b>Experiment 1: Can Titan-LLaMA recover base LM abilities?</b><br><br>
+
+				We test whether the NMM can compensate for the information lost when replacing full attention with cheap segmented attention.<br><br>
+
+				<i>1a. Language Modeling:</i> Train the Titan-LLaMA adapter on 1B tokens from SlimPajama-627B. Report validation perplexity and token accuracy.<br><br>
+
+				<i>1b. NLP Benchmarks:</i> Evaluate on Winogrande, BoolQ, CommonsenseQA, DROP, and SQuAD. Compare against frozen LLaMA (full attention) and segmented-only (ablation).<br><br>
+
+				<b>Experiment 2: Domain Adaptation</b><br><br>
+
+				Can we train domain-specific NMMs that specialize to new areas?<br>
+				<ul>
+					<li><b>Biomed:</b> PubMed corpus</li>
+					<li><b>Legal:</b> LexGLUE benchmark</li>
+					<li><b>Math:</b> GSM8K word problems</li>
+				</ul>
+	    </div>
+	    <div class="margin-right-block">
+				We test both <i>recovery</i> (can NMM fix segmentation?) and <i>adaptation</i> (can NMM specialize?).
+	    </div>
+	</div>
+
+	<!-- RESULTS -->
+	<div class="content-margin-container" id="results">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+				<h1>Results</h1>
+
+				<b>Segmentation breaks everything.</b> Replacing full attention with segmented attention is catastrophic:<br><br>
+
+				<table class="results">
+					<tr>
+						<th>Model</th>
+						<th>Token Accuracy</th>
+						<th>Perplexity</th>
+					</tr>
+					<tr>
+						<td>Full-Attention LLaMA</td>
+						<td>~100%</td>
+						<td>~1.0</td>
+					</tr>
+					<tr>
+						<td>Segmented-only (no NMM)</td>
+						<td>0%</td>
+						<td>1,516,042</td>
+					</tr>
+					<tr>
+						<td><b>Titan-LLaMA (Segmented + NMM)</b></td>
+						<td><b>100%</b></td>
+						<td><b>~1.0</b></td>
+					</tr>
+				</table>
+
+				The NMM fully recovers language modeling ability.<br><br>
+
+				<b>But benchmarks don't recover.</b> Despite perfect LM metrics, downstream benchmarks barely improve:<br><br>
+
+				<table class="results">
+					<tr>
+						<th>Benchmark</th>
+						<th>Full-Attn LLaMA</th>
+						<th>Segmented-only</th>
+						<th>Titan-LLaMA (LM loss)</th>
+					</tr>
+					<tr>
+						<td>Winogrande</td>
+						<td>60.5%</td>
+						<td>48.4%</td>
+						<td>51%</td>
+					</tr>
+					<tr>
+						<td>BoolQ</td>
+						<td>75.0%</td>
+						<td>43%</td>
+						<td>46%</td>
+					</tr>
+					<tr>
+						<td>CommonsenseQA</td>
+						<td>75.0%</td>
+						<td>19%</td>
+						<td>—</td>
+					</tr>
+					<tr>
+						<td>DROP</td>
+						<td>59.5%</td>
+						<td>0%</td>
+						<td>—</td>
+					</tr>
+				</table>
+
+				<b>The insight:</b> Next-token prediction is "too easy." The NMM learns to predict tokens but doesn't learn the rich intermediate representations that full attention builds.<br><br>
+
+				<b>Attention distillation closes the gap.</b> We add a second loss that supervises NMM hidden states against full-attention LLaMA's hidden states:<br><br>
+
+				<ol>
+					<li>Forward pass through Titan-LLaMA → collect "student" hidden states</li>
+					<li>Forward pass through full-attention LLaMA → collect "teacher" hidden states</li>
+					<li>Add MSE(student, teacher) to the LM loss</li>
+				</ol><br>
+
+				<table class="results">
+					<tr>
+						<th>Benchmark</th>
+						<th>LM-only</th>
+						<th>+ Distillation (λ=0.7)</th>
+						<th>Change</th>
+					</tr>
+					<tr>
+						<td>Winogrande</td>
+						<td>51%</td>
+						<td>56%</td>
+						<td><span style="color:green">+5%</span></td>
+					</tr>
+					<tr>
+						<td>BoolQ</td>
+						<td>46%</td>
+						<td>55%</td>
+						<td><span style="color:green">+9%</span></td>
+					</tr>
+				</table><br>
+
+				<b>Tradeoff:</b> With distillation, token accuracy drops to ~60% (vs 100% without). The model sacrifices some LM performance to learn richer representations—a worthwhile trade for downstream tasks.
+	    </div>
+	    <div class="margin-right-block">
+				<b>Key finding:</b> LM loss alone doesn't teach rich representations. Attention distillation is necessary.
+	    </div>
+	</div>
+
+	<!-- LIMITATIONS -->
+	<div class="content-margin-container" id="limitations">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+				<h1>Limitations and Future Work</h1>
+
+				<b>Incomplete recovery.</b> Even with distillation, we don't fully recover full-attention performance. The gap suggests that some information encoded in full attention is fundamentally difficult to compress into a learned memory module.<br><br>
+
+				<b>Throughput overhead.</b> Our current NMM implementation introduces computational overhead that negates the theoretical efficiency gains of segmented attention. This is an engineering limitation, not a fundamental one—optimized kernels could address this.<br><br>
+
+				<b>Domain adaptation experiments.</b> We planned but did not complete experiments training domain-specific NMMs on PubMed, LexGLUE, and GSM8K. This remains promising future work.<br><br>
+
+				<b>Scale.</b> All experiments use LLaMA-3.1-8B. It remains to be seen whether our findings generalize to larger models where the capacity gap between NMM and full attention may be more or less pronounced.
+	    </div>
+	    <div class="margin-right-block">
+	    </div>
+	</div>
+
+	<!-- REFERENCES -->
+	<div class="content-margin-container" id="references">
+			<div class="margin-left-block">
+			</div>
+	    <div class="main-content-block">
+					<div class='citation' style="height:auto"><br>
+						<span style="font-size:16px">References:</span><br><br>
+						<a id="ref_1"></a>[1] Hu et al. <a href="https://arxiv.org/abs/2106.09685">LoRA: Low-Rank Adaptation of Large Language Models</a>, 2021<br><br>
+						<a id="ref_2"></a>[2] <a href="">Cartridges: Parameter-Efficient KV Cache Adapters</a>, 2024<br><br>
+						<a id="ref_3"></a>[3] Gu et al. <a href="https://arxiv.org/abs/2111.00396">Efficiently Modeling Long Sequences with Structured State Spaces</a>, 2021<br><br>
+						<a id="ref_4"></a>[4] <a href="https://arxiv.org/abs/2501.00663">Titans: Learning to Memorize at Test Time</a>, Google Research, 2024<br><br>
+						<a id="ref_5"></a>[5] <a href="https://huggingface.co/datasets/cerebras/SlimPajama-627B">SlimPajama-627B</a>, Cerebras, 2023<br><br>
+					</div>
+	    </div>
+	    <div class="margin-right-block">
+	    </div>
+	</div>
+
+</body>
+
+</html>
