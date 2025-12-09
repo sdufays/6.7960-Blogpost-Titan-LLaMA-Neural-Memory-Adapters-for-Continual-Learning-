@@ -231,7 +231,7 @@
           <img src="./images/titan_architecture.png" width=800px/>
 	    </div>
 	    <div class="margin-right-block">
-					<b>TL;DR:</b> We attach Titans-style neural memory to a frozen LLaMA backbone. The NMM recovers language modeling but not benchmark performance—until we add attention distillation.
+					<b>TL;DR:</b> HAVE TO DO 
 	    </div>
 	</div>
 
@@ -244,23 +244,22 @@
 
         In NLP, we already have a bunch of very strong, off-the-shelf LLMs, but their
         "memory" cost grows quadratically with sequence length. Most open-source fixes
-        are linear-time hacks&mdash;sliding windows, RAG, caching tricks&mdash;rather than a
+        are linear-time hacks&mdash;sliding windows, RAG, caching tricks, etc&mdash;rather than a
         true learned state. As we discuss in the background, these approaches keep the
         model stateless and outsource memory to context or retrieval.<br><br>
 
-        Titans stood out to us because it does the opposite: the state is a learned
+        Titans stood out to us because it is a very unique approach that does the opposite: the state is a learned
         architecture, not a transient context vector that disappears when the window
         moves on. We wanted to extend that idea and build modular Titan adapters that
-        plug into a pre-trained LLaMA where we deliberately cripple long-range
-        attention, so the adapter becomes the only path for cross-segment
-        information.<br><br>
+        augment a pre-trained LLM whose long-range memory we’ve deliberately incapacitated.<br><br>
 
-        To our knowledge, no one has done this before: combining Titans-style neural
-        memory with a frozen LLaMA backbone as a drop-in "memory cartridge" that
-        <i>replaces</i> long-range attention rather than just augmenting it. The result is
+        No one has done this before: combining Titans-style neural
+        memory with a frozen backbone as a drop-in "memory cartridge". The result is
         an architecture that (i) generates tokens much faster as generation length
         grows and (ii) can be fine-tuned by swapping in task-specific memory adapters
         for downstream domains.
+    </div>
+    <div class="margin-right-block">
     </div>
     </div>
 
@@ -273,10 +272,12 @@
         <h1>Background</h1>
 
         Prior work on adapting language models falls into two categories.<br><br>
-
-        <b>Parameter-efficient adapters.</b> Full fine-tuning is expensive and risks catastrophic forgetting. LoRA <a href="#ref_1">[1]</a> instead adds trainable low-rank factors to frozen weight matrices, reducing trainable parameters by orders of magnitude while preserving expressivity. Cartridges <a href="#ref_2">[2]</a> go further, treating the KV cache as an adapter: learned virtual KV vectors are prepended to the context so the frozen model behaves as if it had read a particular corpus. Both keep backbone weights untouched.<br><br>
+        <b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> revisit this idea by improving stability and efficiency with linear dynamics. Transformers on the other hand store everything explicitly via attention, relying on a KV cache that grows with sequence length: every new token attends over all previous ones, which gives precise access to the past but with quadratic cost in the context length.<br><br>
     </div>
     <div class="margin-right-block">
+        <span class="figure-caption-right">
+        This illustrates a core tradeoff in ML: recurrent models compress history into a fixed-size state but struggle with very long contexts, while transformers store everything explicitly and become slow and memory-hungry.
+        </span>
     </div>
     </div>
 
@@ -286,13 +287,10 @@
     </div>
 
     <div class="main-content-block">
-        <b>Memory and state.</b> RNNs and LSTMs compress history into a fixed-size hidden vector but forget distant information. SSMs <a href="#ref_3">[3]</a> revisit this idea by improving stability and efficiency with linear dynamics. Transformers on the other hand store everything explicitly via attention, relying on a KV cache that grows with sequence length: every new token attends over all previous ones, which gives precise access to the past but with quadratic cost in the context length.<br><br>
+        <b>Parameter-efficient adapters.</b> Full fine-tuning is expensive and risks catastrophic forgetting. LoRA <a href="#ref_1">[1]</a> instead adds trainable low-rank factors to frozen weight matrices, reducing trainable parameters by orders of magnitude while preserving expressivity. Cartridges <a href="#ref_2">[2]</a> go further, treating the KV cache as an adapter: learned virtual KV vectors are prepended to the context so the frozen model behaves as if it had read a particular corpus. Both keep backbone weights untouched.<br><br>
     </div>
 
     <div class="margin-right-block">
-        <span class="figure-caption-right">
-        This illustrates a core tradeoff in ML: recurrent models compress history into a fixed-size state but struggle with very long contexts, while transformers store everything explicitly and become slow and memory-hungry.
-        </span>
     </div>
     </div>
 
